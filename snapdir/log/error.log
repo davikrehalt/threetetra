@@ -1,0 +1,19 @@
+[26/Aug/2015:05:02:04 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[26/Aug/2015:11:12:43 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[28/Aug/2015:12:05:25 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[29/Aug/2015:02:59:12 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[29/Aug/2015:02:59:12 -0700] Error on startup: 
+bind: resource busy (Address already in use)
+[29/Aug/2015:02:59:15 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[29/Aug/2015:02:59:15 -0700] Error on startup: 
+bind: resource busy (Address already in use)
+[29/Aug/2015:02:59:16 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[29/Aug/2015:02:59:16 -0700] Error on startup: 
+bind: resource busy (Address already in use)
+[29/Aug/2015:03:01:12 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[29/Aug/2015:03:01:12 -0700] Error on startup: 
+bind: resource busy (Address already in use)
+[29/Aug/2015:03:01:42 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[29/Aug/2015:03:01:42 -0700] Error on startup: 
+bind: resource busy (Address already in use)
+[29/Aug/2015:03:09:52 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
