@@ -95,10 +95,10 @@ function initWebGL(canvas){
 
     var geometry = new THREE.BoxGeometry( 10, 10, 10 );
     var material = new THREE.MeshBasicMaterial( {color: 0xff0000,wireframe: true} );
-    var cube = new THREE.Mesh( geometry, material );
-    cube.position.set(5,5,5);
-    scene.add( cube );
-    updatestate("cubeadded");
+    //var cube = new THREE.Mesh( geometry, material );
+    //cube.position.set(5,5,5);
+    //scene.add( cube );
+    //updatestate("cubeadded");
     document.addEventListener("mousemove",onDocumentMouseMove,false);
     document.addEventListener("keydown",keypress,false);
     updatestate("rendering"); 

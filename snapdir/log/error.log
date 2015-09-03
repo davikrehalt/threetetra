@@ -17,3 +17,15 @@ bind: resource busy (Address already in use)
 [29/Aug/2015:03:01:42 -0700] Error on startup: 
 bind: resource busy (Address already in use)
 [29/Aug/2015:03:09:52 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[01/Sep/2015:05:01:45 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[01/Sep/2015:09:21:04 -0700] Server.httpServe: SHUTDOWN
+[01/Sep/2015:09:21:04 -0700] Server.httpServe: BACKEND STOPPED
+[02/Sep/2015:17:10:05 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[02/Sep/2015:17:10:28 -0700] Server.httpServe: SHUTDOWN
+[02/Sep/2015:17:10:28 -0700] Server.httpServe: BACKEND STOPPED
+[02/Sep/2015:17:11:28 -0700] Server.httpServe: START, binding to [http://0.0.0.0:800/]
+[02/Sep/2015:17:11:28 -0700] Error on startup: 
+bind: permission denied (Permission denied)
+[02/Sep/2015:17:11:29 -0700] Server.httpServe: START, binding to [http://0.0.0.0:8000/]
+[02/Sep/2015:17:16:13 -0700] Server.httpServe: SHUTDOWN
+[02/Sep/2015:17:16:13 -0700] Server.httpServe: BACKEND STOPPED
