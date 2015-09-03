@@ -13,7 +13,7 @@ import qualified Data.Vector as V
 import qualified Data.Tuple as T
 import qualified Data.Map.Strict as M
 
-detailed = True 
+detailed = False 
 type Pt = [Double]
 --always 5 elements   
 type Pt2 = [Double]
@@ -30,7 +30,6 @@ type Tet=(Pt,Pt,Pt,Pt)
 
 dot :: Pt -> Pt -> Double 
 dot x y = sum $ zipWith (*) x y
-
 
 lemon :: Int -> (a,a,a,a) -> a
 lemon 0 (a,b,c,d) = a
@@ -77,7 +76,6 @@ tol (a,b,c,d) = [a,b,c,d]
      
 prettyT :: Tetra -> String
 prettyT t = foldr (\x y -> show x++"\n"++y) "" $ M.toList t
-  
  
 type Tetra = M.Map Int Card
    
@@ -437,11 +435,42 @@ pointslist :: [Bool] -> [(Double,Double,Double)] -> [(Double,Double,Double)]
 --filters the points and sorts them
 pointslist bl pl = L.sortBy orderpt $ fil bl pl
 
+keep :: Card -> Bool
+keep card
+    |elem inf xl = False 
+    |elem xaxis xl = False
+    |elem yaxis xl = False
+    |elem zaxis xl = False
+    |elem backpt xl = False
+    |otherwise = True
+    where x = vertices card
+          xl = [lemon 0 x,lemon 1 x,lemon 2 x,lemon 3 x]
+
+ptup :: Pt -> Pt2
+ptup [1.0,b,c,d,e] = [1.0,b,c,d,w,b^2+c^2+d^2+w^2] where w = surface (b,c,d)
  
+pushup :: Tetra -> Card -> Card
+pushup tetra cardc = cardd where
+    Card xa xb xc xd xe xf xg xh = cardc
+    xb2 = if (M.member xb tetra) then xb else (-1)
+    xc2 = if (M.member xc tetra) then xc else (-1)
+    xd2 = if (M.member xd tetra) then xd else (-1)
+    xe2 = if (M.member xe tetra) then xe else (-1)
+    
+    (a,b,c,d) = xg 
+    a2 = ptup a
+    b2 = ptup b
+    c2 = ptup c
+    d2 = ptup d
+    cir2 = getcir2 (a2,b2,c2,d2)    
+    cardd = Card xa xb2 xc2 xd2 xe2 xf (a2,b2,c2,d2) cir2 
+         
+convup :: Tetra -> Tetra 
+convup tetra = M.map (pushup tetra2) tetra2 where tetra2 = M.filter keep tetra
 
 main :: IO ()
 main = do
-    let n_pts = 40 
+    let n_pts = 4 
     let n = ntotal
     g <- newStdGen
     let randx = L.sort $ take n_pts (randoms g :: [Double]) 
@@ -460,8 +489,9 @@ main = do
     let posglr=[(f x y z,g x y z,h x y z)| x <- [0..n-1], y <- [0..n-1], z <- [0..n-1]]
     let pts = pointslist binlist posglr 
     let model = bow_wat pts starting 5 
-    --putStrLn $ prettyT model
-    print.toJSONedges.tograph $ model 
+    let model2 = convup model
+    putStrLn $ prettyT model2
+    --print.toJSONedges.tograph $ model 
     writeFile "test.json" (toJSONedges.tograph $ model)
 
     return ()
