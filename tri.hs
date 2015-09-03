@@ -172,28 +172,61 @@ getcir (a,b,c,d) = [x0,x1,x2,x3,x4] where
     x2 = (*(-1)).Mx.detLU.(Mx.minorMatrix 5 3) $ mata
     x3 = Mx.detLU.(Mx.minorMatrix 5 4) $ mata
     x4 = (*(-1)).Mx.detLU.(Mx.minorMatrix 5 5) $ mata
-    
+
+getcir0 :: (Pt2,Pt2) -> Pt2
+getcir0 (a,b) = result where
+    [1.0,x1,x2,x3,x4,x5]=a
+    [1.0,y1,y2,y3,y4,y5]=b
+    s = dot [x1,x2,x3,x4] [y1,y2,y3,y4] 
+    result = [(-1)*s,x1+y1,x2+y2,x3+y3,x4+y4,-1.0]
+
+
+
+getcir1 :: (Pt2,Pt2,Pt2) -> Pt2 
+getcir1 (a,b,c) = result where 
+    mata :: D.Matrix Double
+    mata = D.fromLists [a,b,c]
+    norvecs :: [D.Vector Double]
+    norvecs = Ag.nullspacePrec 1 $ D.subMatrix (0,0) (3,5) mata
+    la :: D.Matrix Double
+    lb :: D.Matrix Double
+    lc :: D.Matrix Double
+    la = convnormal $ norvecs!!0
+    lb = convnormal $ norvecs!!1
+    lc = D.assoc (1,6) 0 [((0,5),1)]
+    matb :: D.Matrix Double
+    matb = ((mata D.=== la) D.=== lb) D.=== lc
+    resb :: D.Vector Double
+    resb = D.assoc 6 0 [(5,-1.0)]
+    result :: [Double]
+    result = D.toList $ (D.toColumns $ Ag.linearSolve matb (D.asColumn resb))!!0
+
+convnormal :: D.Vector Double -> D.Matrix Double
+convnormal v = (D.asRow).(D.fromList) $ [0,(-1)*(v D.! 1),(-1)*(v D.! 2),(-1)*(v D.! 3),(-1)*(v D.! 4),2*(v D.! 0)]
+
+
+-- want (2*x5,-x1,-x2,-x3,-x4) which is center to be on the plane
+-- so dot that with n has to be 0
+-- so x0*0+x1*(-n1)+x2*(-n2)+x3*(-n3)+x4*(-n4)+x5*(2*n0)
+--remember there is no n5
+--
 getcir2 :: Tet -> Pt2
 getcir2 (a,b,c,d) = result where
     mata :: D.Matrix Double
     mata = D.fromLists [a,b,c,d]
-    normalvecs :: [D.Vector Double]
-    normalvecs = Ag.nullspacePrec 1 mata
-    veca :: [Double]
-    vecb :: [Double]
-    veca = D.toList $ normalvecs!!0
-    vecb = D.toList $ normalvecs!!1
+    norvecs :: [D.Vector Double]
+    norvecs = Ag.nullspacePrec 1 $ D.subMatrix (0,0) (4,5) mata
     la :: D.Matrix Double
+    la = convnormal $ norvecs!!0
     lb :: D.Matrix Double
-    la = (D.asRow).(D.fromList) $ [2*veca!!5,veca!!1,veca!!2,veca!!3,veca!!4,-2*veca!!0] 
-    lb = (D.asRow).(D.fromList) $ [2*vecb!!5,vecb!!1,vecb!!2,vecb!!3,vecb!!4,-2*vecb!!0]
+    lb = D.assoc (1,6) 0 [((0,5),1)]
     matb :: D.Matrix Double
     matb = (mata D.=== la) D.=== lb
     resb :: D.Vector Double
-    resb = D.assoc 6 0 [(4,veca!!5),(5,vecb!!5)]
+    resb = D.assoc 6 0 [(5,-1.0)]
     result :: [Double]
-   
-    result = D.toList.(* D.scalar (-1)).normal $ (D.toColumns $ Ag.linearSolve matb (D.asColumn resb))!!0
+    result = D.toList $ (D.toColumns $ Ag.linearSolve matb (D.asColumn resb))!!0
+--note DO NOT use any of these three with Inf point and expect it to work!
 
 access :: Triag -> Edge -> (Pt, Pt, Int, Int,Int,Int)
 access tg e 
@@ -335,18 +368,7 @@ tovertex _ = error "not a vertex"
 
 pushon :: [(Pt,Pt)] -> Threegraph
 pushon [] = Set.empty
-pushon (x:xs) 
-    |snd x == inf = Set.empty
-    |fst x == inf = Set.empty
-    |snd x == xaxis = Set.empty
-    |fst x == xaxis = Set.empty
-    |snd x == yaxis = Set.empty
-    |fst x == yaxis = Set.empty
-    |snd x == zaxis = Set.empty
-    |fst x == zaxis = Set.empty
-    |snd x == backpt = Set.empty
-    |fst x == backpt = Set.empty
-    |otherwise= Set.insert (tovertex.fst $ x,tovertex.snd $ x) $ pushon xs
+pushon (x:xs) = Set.insert (tovertex.fst $ x,tovertex.snd $ x) $ pushon xs
 
 cardset :: Card -> Threegraph
 cardset (Card _ _ _ _ _ _ (a,b,c,d) _) = someset where
@@ -364,9 +386,55 @@ stripVex (Vex (a,b,c),Vex (x,y,z)) = ((a,b,c),(x,y,z))
 
 toJSONedges :: Threegraph -> String
 toJSONedges graph = JS.encode $ map stripVex (Set.toList graph)
+
+keep :: Card -> Bool
+keep card
+    |elem inf xl = False 
+    |elem xaxis xl = False
+    |elem yaxis xl = False
+    |elem zaxis xl = False
+    |elem backpt xl = False
+    |otherwise = True
+    where x = vertices card
+          xl = [lemon 0 x,lemon 1 x,lemon 2 x,lemon 3 x]
+
+ptup :: Pt -> Pt2
+ptup [1.0,b,c,d,e] = [1.0,b,c,d,w,b^2+c^2+d^2+w^2] where w = surface (b,c,d)
+ 
+pushup :: Tetra -> Card -> Card
+pushup tetra cardc = cardd where
+    Card xa xb xc xd xe xf xg xh = cardc
+    xb2 = if (M.member xb tetra) then xb else (-1)
+    xc2 = if (M.member xc tetra) then xc else (-1)
+    xd2 = if (M.member xd tetra) then xd else (-1)
+    xe2 = if (M.member xe tetra) then xe else (-1)
+    
+    (a,b,c,d) = xg 
+    a2 = ptup a
+    b2 = ptup b
+    c2 = ptup c
+    d2 = ptup d
+    cir2 = getcir2 (a2,b2,c2,d2)    
+    cardd = Card xa xb2 xc2 xd2 xe2 xf (a2,b2,c2,d2) cir2 
+         
+convup :: Tetra -> Tetra 
+convup tetra = M.map (pushup tetra2) tetra2 where tetra2 = M.filter keep tetra
+
+data Truegraph = Truegraph {truevertex :: Set.Set Pt2,trueedge :: Set.Set (Pt2,Pt2)} 
+
+improvetetra :: Tetra -> Tetra
+improvetetra = undefined
+
+failedge :: (Pt2,Pt2) -> Set.Set Pt2 -> Bool
+failedge (p1,p2) setp = undefined --Set.foldr (\p t -> True|| t)
+
+impedges :: Tetra -> Tetra
+impedges tetra = newtetra where
+   newtetra = undefined 
+
 ------------------------------------------------------------------------------------------------------------------------
 surface :: (Double,Double,Double) -> Double
-surface (x,y,z) = x^4+y^4+z^4
+surface (x,y,z) = 0 --x^4+y^4+z^4
 
 fdiv :: Int -> Int -> Double
 fdiv = (/) `on` fromIntegral
@@ -434,40 +502,6 @@ fil (x:xs) (y:ys)
 pointslist :: [Bool] -> [(Double,Double,Double)] -> [(Double,Double,Double)]
 --filters the points and sorts them
 pointslist bl pl = L.sortBy orderpt $ fil bl pl
-
-keep :: Card -> Bool
-keep card
-    |elem inf xl = False 
-    |elem xaxis xl = False
-    |elem yaxis xl = False
-    |elem zaxis xl = False
-    |elem backpt xl = False
-    |otherwise = True
-    where x = vertices card
-          xl = [lemon 0 x,lemon 1 x,lemon 2 x,lemon 3 x]
-
-ptup :: Pt -> Pt2
-ptup [1.0,b,c,d,e] = [1.0,b,c,d,w,b^2+c^2+d^2+w^2] where w = surface (b,c,d)
- 
-pushup :: Tetra -> Card -> Card
-pushup tetra cardc = cardd where
-    Card xa xb xc xd xe xf xg xh = cardc
-    xb2 = if (M.member xb tetra) then xb else (-1)
-    xc2 = if (M.member xc tetra) then xc else (-1)
-    xd2 = if (M.member xd tetra) then xd else (-1)
-    xe2 = if (M.member xe tetra) then xe else (-1)
-    
-    (a,b,c,d) = xg 
-    a2 = ptup a
-    b2 = ptup b
-    c2 = ptup c
-    d2 = ptup d
-    cir2 = getcir2 (a2,b2,c2,d2)    
-    cardd = Card xa xb2 xc2 xd2 xe2 xf (a2,b2,c2,d2) cir2 
-         
-convup :: Tetra -> Tetra 
-convup tetra = M.map (pushup tetra2) tetra2 where tetra2 = M.filter keep tetra
-
 main :: IO ()
 main = do
     let n_pts = 4 
